@@ -11,20 +11,20 @@ use hyper::status::StatusCode;
 pub enum ErrorTiming {
     AtNetwork,
     AtRequest,
-    AtResponse
+    AtResponse,
 }
 
 #[derive(Debug)]
 pub struct ApiError {
     pub error: Box<Error + Send>,
-    pub timing: ErrorTiming
+    pub timing: ErrorTiming,
 }
 
 impl ApiError {
     pub fn new<E: Error>(e: E, timing: ErrorTiming) -> ApiError {
         ApiError {
             error: Box::new(e),
-            timing: timing
+            timing: timing,
         }
     }
 }
@@ -47,13 +47,15 @@ impl StdError for ApiError {
 
 #[derive(Debug)]
 pub enum ResponseError {
-    UnacceptableStatusCode(StatusCode)
+    UnacceptableStatusCode(StatusCode),
 }
 
 impl fmt::Display for ResponseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match *self {
-            ResponseError::UnacceptableStatusCode(ref code) => write!(f, "Unacceptable Status Code: {}", code)
+            ResponseError::UnacceptableStatusCode(ref code) => {
+                write!(f, "Unacceptable Status Code: {}", code)
+            }
         }
     }
 }
@@ -61,7 +63,7 @@ impl fmt::Display for ResponseError {
 impl StdError for ResponseError {
     fn description(&self) -> &str {
         match *self {
-            ResponseError::UnacceptableStatusCode(code) => "Unacceptable Status code"
+            ResponseError::UnacceptableStatusCode(code) => "Unacceptable Status code",
         }
     }
 

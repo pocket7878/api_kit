@@ -1,13 +1,10 @@
-use std::io::{Read};
-
-pub enum RequestBodyEntity<'a> {
-    Data(Vec<u8>),
-    InputStream(&'a Read)
-}
+use std::io::Read;
+use std::vec::Vec;
+use hyper::client::Body;
 
 pub trait BodyParameter {
     fn contentType(&self) -> &str;
-    fn buildEntity(&self) -> RequestBodyEntity;
+    fn build(&self) -> String;
 }
 
 mod json;
