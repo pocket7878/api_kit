@@ -7,3 +7,4 @@ authors = ["Pocket7878 <poketo7878@gmail.com>"]
 hyper = "0.9.10"
 serde = "0.8"
 serde_json = "0.8"
+error = "0.1.9"

@@ -1,18 +1,19 @@
 use hyper::client::Client;
+use hyper::client::response::Response;
+use hyper::client::RequestBuilder;
 use hyper::Url;
 use api_request::HttpMethod;
 use api_request::ApiRequest;
 use std::error::{Error as StdErr};
 use hyper::error::{Error as HyErr};
-
-pub enum SessionError<E: StdErr> {
-    NetworkError(HyErr),
-    ResponseError(E)
-}
+use std::result::Result;
+use hyper::status::StatusCode;
+use error::{ApiError, ErrorTiming, ResponseError};
+use std::boxed::Box;
 
 pub trait ApiClient {
     fn base_url(&self) -> &str;
-    fn sendRequest<ResponseType, E: StdErr>(&self, request: &ApiRequest<ResponseType, E>) -> Result<ResponseType, SessionError<E>> {
+    fn sendRequest<ResponseType>(&self, request: &ApiRequest<ResponseType>) -> Result<ResponseType, ApiError> {
         let client = Client::new();
         let base_url = match request.base_url() {
             Some(url) => url,
@@ -32,12 +33,39 @@ pub trait ApiClient {
             HttpMethod::PATCH => client.patch(requestUri),
             HttpMethod::DELETE => client.patch(requestUri)
         };    
-        let interceptedRequest = request.interceptRequest(hyperRequest);
-        let mut result = interceptedRequest.send();
-        let responseObject = match result {
-            Ok(mut resp) => request.responseFromObject(&mut resp),
-            Err(err) => Err(SessionError::NetworkError(err))
+        let mut interceptedRequest = request.interceptRequest(hyperRequest);
+        let result = match interceptedRequest {
+            Ok(req) => {
+                Ok(req.send())
+            },
+            Err(err) => {
+                Err(err)
+            }
         };
-        return responseObject;
+        return match result {
+            Ok(resp) => {
+                let result = match resp  {
+                    Ok(mut hyresp) => {
+                        match request.interceptResponse(&mut hyresp) {
+                            Ok(mut interceptedResponse) => {
+                                request.responseFromObject(&mut interceptedResponse)
+                            },
+                            Err(err) => {
+                                Err(err)
+                            }
+                        }
+                    },
+                    Err(err) => {
+                        let apiError = ApiError::new::<HyErr>(err, ErrorTiming::AtNetwork);
+                        Err(apiError)
+                    }
+                };
+                result
+            },
+            //Error on interceptRequest
+            Err(err) => {
+                Err(err)
+            }
+        };
     }
 }
