@@ -1,7 +1,13 @@
 [package]
 name = "api_kit"
 version = "0.1.0"
-authors = ["Pocket7878 <poketo7878@gmail.com>"]
+readme = "README.md"
+description = "Rust library for build typesafe web api client."
+repository = "https://github.com/pocket7878/api_kit"
+licence = "MIT"
+authors = [
+  "Pocket7878 <poketo7878@gmail.com>"
+]
 
 [dependencies]
 hyper = "0.9.10"
