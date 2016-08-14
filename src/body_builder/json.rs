@@ -1,11 +1,12 @@
-use serde_json::Value;
+use serde::ser::Serialize;
 use serde_json::ser;
-use body_builder::BodyBuilder;
+use serde_json::value::Value;
+use body_builder::{BodyBuilder, RequestBody};
 use std::io::{Read, BufReader};
 use hyper::client::{Body, RequestBuilder};
 use std::convert::Into;
 
-struct JSONBodyBuilder {
+pub struct JSONBodyBuilder {
     pub jsonObject: Value,
 }
 
@@ -16,12 +17,12 @@ impl JSONBodyBuilder {
 }
 
 impl BodyBuilder for JSONBodyBuilder {
-    fn contentType(&self) -> &str {
-        return "application/json";
-    }
-
-    fn build(&self) -> String {
+    fn build(&self) -> RequestBody {
         let json_str: String = ser::to_string(&self.jsonObject).unwrap();
-        return json_str;
+        let body = RequestBody { 
+            content_type: "application/json",
+            body: json_str
+        };
+        return body;
     }
 }

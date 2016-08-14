@@ -1,4 +1,4 @@
-use hyper::client::RequestBuilder;
+use hyper::client::request::Request;
 use hyper::net::Fresh;
 use hyper::client::response::Response;
 use hyper::status::StatusCode;
@@ -6,7 +6,7 @@ use std::error::Error as StdErr;
 use err::Error;
 use error::ApiError;
 use std::fmt;
-use body_builder::BodyBuilder;
+use body_builder::{BodyBuilder, RequestBody};
 
 pub use hyper::method::Method as HttpMethod;
 
@@ -21,13 +21,13 @@ pub trait ApiRequest<ResponseType> {
         let vc: Vec<(&str, &str)> = vec![];
         return vc;
     }
-    fn requestBody(&self) -> String {
-        return String::from("");
+    fn requestBody(&self) -> Option<RequestBody> {
+        return None;
     }
-    fn interceptRequest<'a>(&'a self,
-                            requestBuilder: RequestBuilder<'a>)
-                            -> Result<RequestBuilder<'a>, ApiError> {
-        return Ok(requestBuilder);
+    fn interceptRequest(&self,
+                            request: Request<Fresh>)
+                            -> Result<Request<Fresh>, ApiError> {
+        return Ok(request);
     }
     fn interceptResponse<'a>(&'a self,
                              response: &'a mut Response)

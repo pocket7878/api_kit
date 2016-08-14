@@ -1,10 +1,11 @@
 use hyper::client::Client;
 use hyper::client::response::Response;
 use hyper::client::RequestBuilder;
+use hyper::client::request::Request;
 use hyper::Url;
 use api_request::HttpMethod;
 use api_request::ApiRequest;
-use body_builder::BodyBuilder;
+use body_builder::{BodyBuilder, RequestBody};
 use std::error::Error as StdErr;
 use hyper::error::Error as HyErr;
 use std::result::Result;
@@ -14,6 +15,10 @@ use std::boxed::Box;
 use std::vec::Vec;
 use hyper::client::Body;
 use std::io::Read;
+use hyper::header::ContentLength;
+use hyper::header::ContentType;
+use hyper::header::Headers;
+use std::io::{Write, Error as StdioErr};
 
 pub trait ApiClient {
     fn base_url(&self) -> &str;
@@ -32,33 +37,64 @@ pub trait ApiClient {
                 querySerializer.append_pair(queryPair.0, queryPair.1);
             }
         }
-        let body = request.requestBody();
-        let mut interceptedRequest =
-            request.interceptRequest(client.request(request.method(), requestUri).body(&body[..]));
-        let result = match interceptedRequest {
-            Ok(req) => Ok(req.send()),
-            Err(err) => Err(err),
-        };
-        return match result {
-            Ok(resp) => {
-                let result = match resp {
-                    Ok(mut hyresp) => {
-                        match request.interceptResponse(&mut hyresp) {
-                            Ok(mut interceptedResponse) => {
-                                request.responseFromObject(&mut interceptedResponse)
-                            }
-                            Err(err) => Err(err),
-                        }
-                    }
-                    Err(err) => {
-                        let apiError = ApiError::new::<HyErr>(err, ErrorTiming::AtNetwork);
-                        Err(apiError)
-                    }
-                };
-                result
+        let mut req = match Request::new(request.method(), requestUri) {
+            Ok(req) => req,
+            Err(err) => {
+                let apiError = ApiError::new::<HyErr>(err, ErrorTiming::AtRequest);
+                return Err(apiError)
             }
-            // Error on interceptRequest
-            Err(err) => Err(err),
         };
+
+        let body = request.requestBody();
+        match body {
+            Some(bd) => {
+                req.headers_mut().set(ContentType(bd.content_type.parse().unwrap()));
+                req.headers_mut().set(ContentLength(bd.body.len() as u64));
+            },
+            None => {
+                req.headers_mut().set(ContentLength(0));
+            }
+        };
+
+        let mut req_started = match request.interceptRequest(req)  {
+            Ok(req) => {
+                match req.start() {
+                    Ok(req) => req,
+                    Err(err) => {
+                        let apiError = ApiError::new::<HyErr>(err, ErrorTiming::AtRequest);
+                        return Err(apiError);
+                    }
+                }
+            }
+            Err(err) => return Err(err)
+        };
+
+        match request.requestBody() {
+            Some(body) => {
+                match req_started.write(body.body.as_bytes()) {
+                    Ok(_) => (),
+                    Err(err) => {
+                        let apiError = ApiError::new::<StdioErr>(err, ErrorTiming::AtRequest);
+                        return Err(apiError);
+                    }
+                }
+            },
+            None => ()
+        }
+
+        let mut result = match req_started.send() {
+            Ok(resp) => resp,
+            Err(err) => {
+                let apiError = ApiError::new::<HyErr>(err, ErrorTiming::AtNetwork);
+                return Err(apiError);
+            }
+        };
+
+        match request.interceptResponse(&mut result) {
+            Ok(mut interceptedResponse) => {
+                request.responseFromObject(&mut interceptedResponse)
+            }
+            Err(err) => Err(err),
+        }
     }
 }

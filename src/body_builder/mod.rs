@@ -1,6 +1,12 @@
-pub trait BodyBuilder {
-    fn contentType(&self) -> &str;
-    fn build(&self) -> String;
+pub struct RequestBody {
+    pub content_type: &'static str,
+    pub body: String
 }
 
-mod json;
+
+
+pub trait BodyBuilder {
+    fn build(&self) -> RequestBody;
+}
+
+pub mod json;
