@@ -2,6 +2,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate hyper;
 extern crate error as err;
+extern crate url;
 
 pub mod api_client;
 pub mod api_request;

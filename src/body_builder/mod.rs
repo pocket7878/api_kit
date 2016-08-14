@@ -10,3 +10,4 @@ pub trait BodyBuilder {
 }
 
 pub mod json;
+pub mod form;
