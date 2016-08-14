@@ -4,7 +4,7 @@ use hyper::client::RequestBuilder;
 use hyper::Url;
 use api_request::HttpMethod;
 use api_request::ApiRequest;
-use body_parameter::BodyParameter;
+use body_builder::BodyBuilder;
 use std::error::Error as StdErr;
 use hyper::error::Error as HyErr;
 use std::result::Result;
@@ -32,14 +32,9 @@ pub trait ApiClient {
                 querySerializer.append_pair(queryPair.0, queryPair.1);
             }
         }
-        let mut hyperRequest = match request.method() {
-            HttpMethod::GET => client.get(requestUri),
-            HttpMethod::POST => client.post(requestUri),
-            HttpMethod::PUT => client.put(requestUri),
-            HttpMethod::PATCH => client.patch(requestUri),
-            HttpMethod::DELETE => client.patch(requestUri),
-        };
-        let mut interceptedRequest = request.interceptRequest(hyperRequest);
+        let body = request.requestBody();
+        let mut interceptedRequest =
+            request.interceptRequest(client.request(request.method(), requestUri).body(&body[..]));
         let result = match interceptedRequest {
             Ok(req) => Ok(req.send()),
             Err(err) => Err(err),

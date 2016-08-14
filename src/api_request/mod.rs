@@ -1,11 +1,3 @@
-pub enum HttpMethod {
-    GET,
-    POST,
-    PUT,
-    PATCH,
-    DELETE,
-}
-
 use hyper::client::RequestBuilder;
 use hyper::net::Fresh;
 use hyper::client::response::Response;
@@ -14,7 +6,9 @@ use std::error::Error as StdErr;
 use err::Error;
 use error::ApiError;
 use std::fmt;
-use body_parameter::BodyParameter;
+use body_builder::BodyBuilder;
+
+pub use hyper::method::Method as HttpMethod;
 
 pub trait ApiRequest<ResponseType> {
     // Define this function when you want to override base url
@@ -27,8 +21,8 @@ pub trait ApiRequest<ResponseType> {
         let vc: Vec<(&str, &str)> = vec![];
         return vc;
     }
-    fn bodyParameters(&self) -> Option<Box<BodyParameter>> {
-        return None;
+    fn requestBody(&self) -> String {
+        return String::from("");
     }
     fn interceptRequest<'a>(&'a self,
                             requestBuilder: RequestBuilder<'a>)

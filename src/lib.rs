@@ -5,7 +5,7 @@ extern crate error as err;
 
 pub mod api_client;
 pub mod api_request;
-pub mod body_parameter;
+pub mod body_builder;
 pub mod error;
 
 
