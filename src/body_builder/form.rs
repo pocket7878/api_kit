@@ -9,7 +9,7 @@ use std::string::ToString;
 use url::form_urlencoded;
 
 pub struct FormBodyBuilder {
-    pub data: Vec<(String, Box<ToString>)>
+    pub data: Vec<(String, Box<ToString>)>,
 }
 
 impl FormBodyBuilder {
@@ -27,7 +27,7 @@ impl BodyBuilder for FormBodyBuilder {
         let result = encoder.finish();
         return RequestBody {
             content_type: "application/x-www-form-urlencoded",
-            body: result
-        }
+            body: result,
+        };
     }
 }

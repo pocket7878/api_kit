@@ -1,6 +1,6 @@
 pub struct RequestBody {
     pub content_type: &'static str,
-    pub body: String
+    pub body: String,
 }
 
 

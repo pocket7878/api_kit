@@ -41,7 +41,7 @@ pub trait ApiClient {
             Ok(req) => req,
             Err(err) => {
                 let apiError = ApiError::new::<HyErr>(err, ErrorTiming::AtRequest);
-                return Err(apiError)
+                return Err(apiError);
             }
         };
 
@@ -50,13 +50,13 @@ pub trait ApiClient {
             Some(bd) => {
                 req.headers_mut().set(ContentType(bd.content_type.parse().unwrap()));
                 req.headers_mut().set(ContentLength(bd.body.len() as u64));
-            },
+            }
             None => {
                 req.headers_mut().set(ContentLength(0));
             }
         };
 
-        let mut req_started = match request.interceptRequest(req)  {
+        let mut req_started = match request.interceptRequest(req) {
             Ok(req) => {
                 match req.start() {
                     Ok(req) => req,
@@ -66,7 +66,7 @@ pub trait ApiClient {
                     }
                 }
             }
-            Err(err) => return Err(err)
+            Err(err) => return Err(err),
         };
 
         match request.requestBody() {
@@ -78,8 +78,8 @@ pub trait ApiClient {
                         return Err(apiError);
                     }
                 }
-            },
-            None => ()
+            }
+            None => (),
         }
 
         let mut result = match req_started.send() {
@@ -91,9 +91,7 @@ pub trait ApiClient {
         };
 
         match request.interceptResponse(&mut result) {
-            Ok(mut interceptedResponse) => {
-                request.responseFromObject(&mut interceptedResponse)
-            }
+            Ok(mut interceptedResponse) => request.responseFromObject(&mut interceptedResponse),
             Err(err) => Err(err),
         }
     }

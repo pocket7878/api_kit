@@ -24,9 +24,7 @@ pub trait ApiRequest<ResponseType> {
     fn requestBody(&self) -> Option<RequestBody> {
         return None;
     }
-    fn interceptRequest(&self,
-                            request: Request<Fresh>)
-                            -> Result<Request<Fresh>, ApiError> {
+    fn interceptRequest(&self, request: Request<Fresh>) -> Result<Request<Fresh>, ApiError> {
         return Ok(request);
     }
     fn interceptResponse<'a>(&'a self,
