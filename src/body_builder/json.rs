@@ -20,7 +20,7 @@ impl BodyBuilder for JSONBodyBuilder {
     fn build(&self) -> RequestBody {
         let json_str: String = ser::to_string(&self.jsonObject).unwrap();
         let body = RequestBody {
-            content_type: "application/json",
+            content_type: String::from("application/json"),
             body: json_str,
         };
         return body;

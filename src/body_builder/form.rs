@@ -26,7 +26,7 @@ impl BodyBuilder for FormBodyBuilder {
         }
         let result = encoder.finish();
         return RequestBody {
-            content_type: "application/x-www-form-urlencoded",
+            content_type: String::from("application/x-www-form-urlencoded"),
             body: result,
         };
     }
