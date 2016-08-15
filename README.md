@@ -80,3 +80,8 @@ fn main() {
     println!("{}", me.unwrap());
 }
 ```
+
+## TODO
+
+- [ ] Support Mutlipart/Form
+- [ ] Support Network Interceptor (retry automatic-authenticate..etc)
