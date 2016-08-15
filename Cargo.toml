@@ -14,5 +14,4 @@ hyper = "0.9.10"
 serde = "0.8"
 serde_json = "0.8"
 error = "0.1.9"
-[dependencies.url]
-git = "https://github.com/servo/rust-url"
+url = "1.2.0"
