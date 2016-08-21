@@ -8,6 +8,7 @@ pub mod api_client;
 pub mod api_request;
 pub mod body_builder;
 pub mod error;
+pub mod interceptor;
 
 
 
