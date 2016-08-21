@@ -6,19 +6,31 @@ use std::error::Error as StdErr;
 use err::Error;
 use error::ApiError;
 use std::fmt;
+use std::rc::Rc;
+use std::cell::RefCell;
+use hyper::header::Headers;
 use body_builder::{BodyBuilder, RequestBody};
 
 pub use hyper::method::Method as HttpMethod;
 
-pub trait ApiRequest<ResponseType> {
+pub struct ApiRequest {
+    pub base_url: String,
+    pub method: HttpMethod,
+    pub path: String,
+    pub headers: Option<Headers>,
+    pub queryParameters: Vec<(String, String)>,
+    pub body: Option<RequestBody>,
+}
+
+pub trait ApiRequestBuilder<ResponseType> {
     // Define this function when you want to override base url
-    fn base_url(&self) -> Option<&str> {
+    fn base_url(&self) -> Option<String> {
         return None;
     }
     fn method(&self) -> HttpMethod;
-    fn path(&self) -> &str;
-    fn queryParameters(&self) -> Vec<(&str, &str)> {
-        let vc: Vec<(&str, &str)> = vec![];
+    fn path(&self) -> String;
+    fn queryParameters(&self) -> Vec<(String, String)> {
+        let vc: Vec<(String, String)> = vec![];
         return vc;
     }
     fn requestBody(&self) -> Option<RequestBody> {
@@ -27,10 +39,11 @@ pub trait ApiRequest<ResponseType> {
     fn interceptRequest(&self, request: Request<Fresh>) -> Result<Request<Fresh>, ApiError> {
         return Ok(request);
     }
-    fn interceptResponse<'a>(&'a self,
-                             response: &'a mut Response)
-                             -> Result<&'a mut Response, ApiError> {
+    fn interceptResponse(&self,
+                             response: Rc<RefCell<Response>>)
+                             -> Result<Rc<RefCell<Response>>, ApiError> {
         return Ok(response);
     }
-    fn responseFromObject(&self, response: &mut Response) -> Result<ResponseType, ApiError>;
+    fn responseFromObject(&self, response: Rc<RefCell<Response>>) -> Result<ResponseType, ApiError>;
+
 }

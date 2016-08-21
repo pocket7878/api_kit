@@ -4,7 +4,8 @@ use hyper::client::RequestBuilder;
 use hyper::client::request::Request;
 use hyper::Url;
 use api_request::HttpMethod;
-use api_request::ApiRequest;
+use api_request::{ApiRequest, ApiRequestBuilder};
+use interceptor::{Interceptor, InterceptorChain, SendRequestInterceptor};
 use body_builder::{BodyBuilder, RequestBody};
 use std::error::Error as StdErr;
 use hyper::error::Error as HyErr;
@@ -19,80 +20,59 @@ use hyper::header::ContentLength;
 use hyper::header::ContentType;
 use hyper::header::Headers;
 use std::io::{Write, Error as StdioErr};
+use std::rc::Rc;
+
+pub struct RealCall<ResponseType: 'static> {
+    api_request: Rc<ApiRequest>,
+    api_request_builder: Rc<ApiRequestBuilder<ResponseType>>,
+    pub interceptors: Vec<Box<Interceptor>>,
+}
+
+impl<ResponseType> RealCall<ResponseType> {
+    pub fn addInterceptor(mut self, interceptor: Box<Interceptor>) -> RealCall<ResponseType> {
+        self.interceptors.push(interceptor);
+        return self
+    }
+
+    pub fn send(mut self) -> Result<ResponseType, ApiError> {
+        self.interceptors.push(Box::new(SendRequestInterceptor {
+            request_builder: self.api_request_builder.clone()
+        }));
+        let chain = InterceptorChain::new(
+            self.api_request.clone(), 
+            self.interceptors);
+        let result = chain.proceed(self.api_request);
+        return match result {
+            Ok(mut response) => {
+                self.api_request_builder.responseFromObject(response)
+            },
+            Err(apiErr) => Err(apiErr)
+        }
+    }
+}
 
 pub trait ApiClient {
-    fn base_url(&self) -> &str;
-    fn sendRequest<ResponseType>(&self,
-                                 request: &ApiRequest<ResponseType>)
-                                 -> Result<ResponseType, ApiError> {
-        let client = Client::new();
-        let base_url = match request.base_url() {
+    fn base_url(&self) -> String;
+    fn call<ResponseType>(&self, request_builder: Rc<ApiRequestBuilder<ResponseType>>) -> RealCall<ResponseType> {
+        let api_request = self.build_api_request(request_builder.clone());
+        return RealCall {
+            api_request: Rc::new(api_request),
+            api_request_builder: request_builder.clone(),
+            interceptors: Vec::new()
+        }
+    }
+    fn build_api_request<ResponseType>(&self, request_builder: Rc<ApiRequestBuilder<ResponseType>>) -> ApiRequest {
+        let base_url = match request_builder.base_url() {
             Some(url) => url,
-            None => self.base_url(),
+            None => self.base_url()
         };
-        let mut requestUri: Url = Url::parse(&format!("{}{}", base_url, request.path())).unwrap();
-        {
-            let mut querySerializer = requestUri.query_pairs_mut();
-            for queryPair in &request.queryParameters() {
-                querySerializer.append_pair(queryPair.0, queryPair.1);
-            }
-        }
-        let mut req = match Request::new(request.method(), requestUri) {
-            Ok(req) => req,
-            Err(err) => {
-                let apiError = ApiError::new::<HyErr>(err, ErrorTiming::AtRequest);
-                return Err(apiError);
-            }
-        };
-
-        let body = request.requestBody();
-        match body {
-            Some(bd) => {
-                req.headers_mut().set(ContentType(bd.content_type.parse().unwrap()));
-                req.headers_mut().set(ContentLength(bd.body.len() as u64));
-            }
-            None => {
-                req.headers_mut().set(ContentLength(0));
-            }
-        };
-
-        let mut req_started = match request.interceptRequest(req) {
-            Ok(req) => {
-                match req.start() {
-                    Ok(req) => req,
-                    Err(err) => {
-                        let apiError = ApiError::new::<HyErr>(err, ErrorTiming::AtRequest);
-                        return Err(apiError);
-                    }
-                }
-            }
-            Err(err) => return Err(err),
-        };
-
-        match request.requestBody() {
-            Some(body) => {
-                match req_started.write(body.body.as_bytes()) {
-                    Ok(_) => (),
-                    Err(err) => {
-                        let apiError = ApiError::new::<StdioErr>(err, ErrorTiming::AtRequest);
-                        return Err(apiError);
-                    }
-                }
-            }
-            None => (),
-        }
-
-        let mut result = match req_started.send() {
-            Ok(resp) => resp,
-            Err(err) => {
-                let apiError = ApiError::new::<HyErr>(err, ErrorTiming::AtNetwork);
-                return Err(apiError);
-            }
-        };
-
-        match request.interceptResponse(&mut result) {
-            Ok(mut interceptedResponse) => request.responseFromObject(&mut interceptedResponse),
-            Err(err) => Err(err),
+        return ApiRequest {
+            base_url: base_url,
+            method: request_builder.method(),
+            path: request_builder.path(),
+            headers: None,
+            queryParameters: request_builder.queryParameters(),
+            body: request_builder.requestBody()
         }
     }
 }
