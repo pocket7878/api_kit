@@ -21,6 +21,8 @@ use hyper::header::{ContentLength, ContentType, Headers};
 use std::io::{Write, Error as StdioErr};
 use std::cell::RefCell;
 
+pub mod log;
+
 pub trait Interceptor {
     fn intercept(&self, chain: InterceptorChain) -> Result<Rc<RefCell<Response>>, ApiError>;
 }
@@ -40,8 +42,8 @@ impl InterceptorChain {
         }
     }
     
-    pub fn request(&self) -> &ApiRequest {
-        &self.request
+    pub fn request(&self) -> Rc<ApiRequest> {
+        return self.request.clone();
     }
     
     pub fn proceed(&self, request: Rc<ApiRequest>) -> Result<Rc<RefCell<Response>>, ApiError> {

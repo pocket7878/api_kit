@@ -29,8 +29,9 @@ pub struct RealCall<ResponseType: 'static> {
 }
 
 impl<ResponseType> RealCall<ResponseType> {
-    pub fn addInterceptor(&mut self, interceptor: Box<Interceptor>) {
-        self.interceptors.push(interceptor)
+    pub fn addInterceptor(mut self, interceptor: Box<Interceptor>) -> RealCall<ResponseType> {
+        self.interceptors.push(interceptor);
+        return self
     }
 
     pub fn send(mut self) -> Result<ResponseType, ApiError> {
