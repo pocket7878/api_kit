@@ -31,40 +31,40 @@ pub struct RealCall<ResponseType: 'static> {
 impl<ResponseType> RealCall<ResponseType> {
     pub fn addInterceptor(mut self, interceptor: Box<Interceptor>) -> RealCall<ResponseType> {
         self.interceptors.push(interceptor);
-        return self
+        return self;
     }
 
     pub fn send(mut self) -> Result<ResponseType, ApiError> {
         self.interceptors.push(Box::new(SendRequestInterceptor {
-            request_builder: self.api_request_builder.clone()
+            request_builder: self.api_request_builder.clone(),
         }));
-        let chain = InterceptorChain::new(
-            self.api_request.clone(), 
-            self.interceptors);
+        let chain = InterceptorChain::new(self.api_request.clone(), self.interceptors);
         let result = chain.proceed(self.api_request);
         return match result {
-            Ok(mut response) => {
-                self.api_request_builder.responseFromObject(response)
-            },
-            Err(apiErr) => Err(apiErr)
-        }
+            Ok(mut response) => self.api_request_builder.responseFromObject(response),
+            Err(apiErr) => Err(apiErr),
+        };
     }
 }
 
 pub trait ApiClient {
     fn base_url(&self) -> String;
-    fn call<ResponseType>(&self, request_builder: Rc<ApiRequestBuilder<ResponseType>>) -> RealCall<ResponseType> {
+    fn call<ResponseType>(&self,
+                          request_builder: Rc<ApiRequestBuilder<ResponseType>>)
+                          -> RealCall<ResponseType> {
         let api_request = self.build_api_request(request_builder.clone());
         return RealCall {
             api_request: Rc::new(api_request),
             api_request_builder: request_builder.clone(),
-            interceptors: Vec::new()
-        }
+            interceptors: Vec::new(),
+        };
     }
-    fn build_api_request<ResponseType>(&self, request_builder: Rc<ApiRequestBuilder<ResponseType>>) -> ApiRequest {
+    fn build_api_request<ResponseType>(&self,
+                                       request_builder: Rc<ApiRequestBuilder<ResponseType>>)
+                                       -> ApiRequest {
         let base_url = match request_builder.base_url() {
             Some(url) => url,
-            None => self.base_url()
+            None => self.base_url(),
         };
         return ApiRequest {
             base_url: base_url,
@@ -72,7 +72,7 @@ pub trait ApiClient {
             path: request_builder.path(),
             headers: None,
             queryParameters: request_builder.queryParameters(),
-            body: request_builder.requestBody()
-        }
+            body: request_builder.requestBody(),
+        };
     }
 }

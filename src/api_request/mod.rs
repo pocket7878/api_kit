@@ -40,10 +40,11 @@ pub trait ApiRequestBuilder<ResponseType> {
         return Ok(request);
     }
     fn interceptResponse(&self,
-                             response: Rc<RefCell<Response>>)
-                             -> Result<Rc<RefCell<Response>>, ApiError> {
+                         response: Rc<RefCell<Response>>)
+                         -> Result<Rc<RefCell<Response>>, ApiError> {
         return Ok(response);
     }
-    fn responseFromObject(&self, response: Rc<RefCell<Response>>) -> Result<ResponseType, ApiError>;
-
+    fn responseFromObject(&self,
+                          response: Rc<RefCell<Response>>)
+                          -> Result<ResponseType, ApiError>;
 }

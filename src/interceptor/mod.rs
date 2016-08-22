@@ -38,31 +38,31 @@ impl InterceptorChain {
         return InterceptorChain {
             interceptors: Rc::new(interceptors),
             index: 0,
-            request: request
-        }
+            request: request,
+        };
     }
-    
+
     pub fn request(&self) -> Rc<ApiRequest> {
         return self.request.clone();
     }
-    
+
     pub fn proceed(&self, request: Rc<ApiRequest>) -> Result<Rc<RefCell<Response>>, ApiError> {
         let next = InterceptorChain {
             interceptors: self.interceptors.clone(),
             index: &self.index + 1,
-            request: request
+            request: request,
         };
-        
+
         let ref interceptor = self.interceptors[self.index];
-        
+
         let result: Result<Rc<RefCell<Response>>, ApiError> = interceptor.intercept(next);
-        
+
         return result;
     }
 }
 
 pub struct SendRequestInterceptor<ResponseType: 'static> {
-    pub request_builder: Rc<ApiRequestBuilder<ResponseType>>
+    pub request_builder: Rc<ApiRequestBuilder<ResponseType>>,
 }
 
 impl<ResponseType> Interceptor for SendRequestInterceptor<ResponseType> {
@@ -96,7 +96,8 @@ impl<ResponseType> Interceptor for SendRequestInterceptor<ResponseType> {
             }
         };
 
-        let mut req_started: Request<Streaming> = match self.request_builder.interceptRequest(req) {
+        let mut req_started: Request<Streaming> = match self.request_builder
+            .interceptRequest(req) {
             Ok(interceptedRequest) => {
                 match interceptedRequest.start() {
                     Ok(started_request) => started_request,
@@ -132,7 +133,7 @@ impl<ResponseType> Interceptor for SendRequestInterceptor<ResponseType> {
 
         match self.request_builder.interceptResponse(Rc::new(RefCell::new(result))) {
             Ok(interceptedResponse) => Ok(interceptedResponse),
-            Err(err) => Err(err)
-        }       
+            Err(err) => Err(err),
+        }
     }
 }

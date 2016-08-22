@@ -6,11 +6,11 @@ pub struct RequestBody {
 }
 
 impl Clone for RequestBody {
-    fn clone(&self) -> RequestBody { 
+    fn clone(&self) -> RequestBody {
         return RequestBody {
             content_type: self.content_type.clone(),
-            body: self.body.clone()
-        }
+            body: self.body.clone(),
+        };
     }
 }
 
