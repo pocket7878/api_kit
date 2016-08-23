@@ -10,7 +10,7 @@ extern crate hyper;
 extern crate serde_json; 
 
 use hyper::client::response::Response;
-use api_kit::api_request::ApiRequest;
+use api_kit::api_request::{ApiRequest, ApiRequestBuilder};
 use api_kit::api_request::HttpMethod;
 use api_kit::api_client::ApiClient;
 use api_kit::error::ApiError;
@@ -19,13 +19,16 @@ use hyper::mime::{Mime, TopLevel, SubLevel, Attr, Value};
 use hyper::client::request::Request;
 use hyper::net::Fresh;
 use std::io::{Read};
+use std::rc::Rc;
+use std::cell::RefCell;
+use api_kit::interceptor::log::LogInterceptor;
 
 struct CircleCi {
 }
 
 impl ApiClient for CircleCi {
-    fn base_url(&self) -> &str {
-        return "https://circleci.com/api/v1.1";
+    fn base_url(&self) -> String {
+        return String::from("https://circleci.com/api/v1.1");
     }
 }
 
@@ -41,19 +44,19 @@ impl<'a> CircleCiMeRequest<'a> {
     }
 }
 
-impl<'a> ApiRequest<serde_json::Value> for CircleCiMeRequest<'a> {
+impl<'a> ApiRequestBuilder<serde_json::Value> for CircleCiMeRequest<'a> {
     
     fn method(&self) -> HttpMethod {
         return HttpMethod::Get;
     }
     
-    fn path(&self) -> &str {
-        return "/me";
+    fn path(&self) -> String {
+        return String::from("/me");
     }
     
-    fn queryParameters(&self) -> Vec<(&str, &str)> {
+    fn queryParameters(&self) -> Vec<(String, String)> {
         return vec![
-            ("circle-token", self.api_token)
+            (String::from("circle-token"), String::from(self.api_token))
         ];
     }
     
@@ -67,16 +70,19 @@ impl<'a> ApiRequest<serde_json::Value> for CircleCiMeRequest<'a> {
         return Ok(request);
     }
     
-    fn responseFromObject(&self, response: &mut Response) -> Result<serde_json::Value, ApiError> {
+    fn responseFromObject(&self, response: Rc<RefCell<Response>>) -> Result<serde_json::Value, ApiError> {
+        let mut raw_response = (*response).borrow_mut();
         let mut buffer = String::new();
-        response.read_to_string(&mut buffer).unwrap();
+        raw_response.read_to_string(&mut buffer).unwrap();
         return Ok(serde_json::from_str(&buffer).unwrap());
     }
 }
 
 fn main() {
     let ci = CircleCi {} ;
-    let me = ci.sendRequest(&CircleCiMeRequest::new("xxxxxxxxxxxxxxxxx"));
+    let me = ci.call(Rc::new(CircleCiMeRequest::new("Your-CircleCi-Token")))
+                .addInterceptor(Box::new(LogInterceptor {}))
+                .send();
     println!("{}", me.unwrap());
 }
 ```
@@ -84,4 +90,4 @@ fn main() {
 ## TODO
 
 - [ ] Support Mutlipart/Form
-- [ ] Support Network Interceptor (retry automatic-authenticate..etc)
+- [X] Support Interceptor (retry automatic-authenticate..etc)
