@@ -1,6 +1,6 @@
 [package]
 name = "api_kit"
-version = "0.1.0"
+version = "0.2.0"
 readme = "README.md"
 description = "Rust library for build typesafe web api client."
 repository = "https://github.com/pocket7878/api_kit"
